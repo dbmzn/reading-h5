@@ -186,6 +186,66 @@
       opacity: .72;
     }
 
+    .start-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 24% 20%, rgba(255, 209, 102, .82), transparent 28%),
+        radial-gradient(circle at 78% 26%, rgba(117, 213, 255, .7), transparent 30%),
+        linear-gradient(180deg, rgba(223,246,255,.96), rgba(255,247,222,.96));
+      transition: opacity .55s ease, visibility .55s ease;
+    }
+
+    .start-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .start-panel {
+      width: min(720px, 92vw);
+      padding: clamp(28px, 5vw, 54px);
+      border: 3px solid rgba(36, 64, 100, .1);
+      border-radius: 28px;
+      background: rgba(255, 250, 240, .88);
+      box-shadow: 0 24px 70px rgba(47, 128, 237, .16), 0 8px 0 rgba(255, 209, 102, .28);
+      text-align: center;
+    }
+
+    .start-title {
+      margin: 0 0 12px;
+      color: var(--ink);
+      font-size: clamp(34px, 7vw, 76px);
+      line-height: 1.1;
+      font-weight: 900;
+    }
+
+    .start-subtitle {
+      margin: 0 0 28px;
+      color: rgba(36, 64, 100, .72);
+      font-size: clamp(16px, 2.2vw, 22px);
+      font-weight: 800;
+      line-height: 1.7;
+    }
+
+    .start-button {
+      min-width: 190px;
+      min-height: 54px;
+      border: 0;
+      border-radius: 8px;
+      color: #fff;
+      background: linear-gradient(135deg, #2f80ed, #2fbf71);
+      box-shadow: 0 14px 34px rgba(47, 128, 237, .28);
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: .08em;
+    }
+
     .scene {
       position: absolute;
       inset: 0;
@@ -194,20 +254,17 @@
       padding: clamp(24px, 6vw, 96px) clamp(18px, 6vw, 96px) clamp(76px, 12vh, 130px);
       opacity: 0;
       transform: translateY(28px) scale(.985);
-      transition: opacity .8s ease, transform .8s ease, filter .8s ease;
-      filter: blur(5px);
+      transition: opacity .72s ease, transform .72s ease;
     }
 
     .scene.active {
       opacity: 1;
       transform: translateY(0) scale(1);
-      filter: blur(0);
     }
 
     .scene.exit {
       opacity: 0;
       transform: translateY(-26px) scale(1.018);
-      filter: blur(5px);
     }
 
     .copy {
@@ -271,28 +328,12 @@
       opacity: 0;
       transform: translate3d(var(--dx), .9em, 0) rotate(var(--rot)) scale(.72);
       transform-origin: center bottom;
-      filter: blur(8px);
-      will-change: transform, opacity, filter;
-    }
-
-    .word::after {
-      content: "";
-      position: absolute;
-      inset: -12% -18%;
-      background: linear-gradient(110deg, transparent 0 35%, rgba(255,255,255,.95) 48%, transparent 62% 100%);
-      opacity: 0;
-      transform: translateX(-120%) skewX(-16deg);
-      pointer-events: none;
+      will-change: transform, opacity;
     }
 
     .scene.active .word {
-      animation: wordIn 1.05s cubic-bezier(.16, .96, .24, 1) forwards, wordGlow 1.7s ease-out forwards;
+      animation: wordIn .86s cubic-bezier(.16, .96, .24, 1) forwards;
       animation-delay: calc(var(--i) * 42ms + 160ms);
-    }
-
-    .scene.active .word::after {
-      animation: shineSweep .72s ease-out forwards;
-      animation-delay: calc(var(--i) * 42ms + 300ms);
     }
 
     .scene.active h1 .word {
@@ -327,12 +368,11 @@
       transform: translate(-50%, -50%) rotate(-7deg) scaleX(0);
       transform-origin: left center;
       background: linear-gradient(90deg, transparent, rgba(255,209,102,.34), rgba(117,213,255,.22), transparent);
-      filter: blur(10px);
       opacity: 0;
     }
 
     .scene.active .ribbon {
-      animation: ribbonIn 1.35s cubic-bezier(.18,.9,.22,1) .12s forwards, ribbonPulse 3.4s ease-in-out 1.4s infinite;
+      animation: ribbonIn 1.2s cubic-bezier(.18,.9,.22,1) .12s forwards, ribbonPulse 3.4s ease-in-out 1.4s infinite;
     }
 
     @keyframes aurora {
@@ -357,45 +397,15 @@
       0% {
         opacity: 0;
         transform: translate3d(var(--dx), .9em, 0) rotate(var(--rot)) scale(.72);
-        filter: blur(8px);
       }
       58% {
         opacity: 1;
         transform: translate3d(0, -.13em, 0) rotate(0) scale(1.08);
-        filter: blur(0);
       }
       to {
         opacity: 1;
         transform: translate3d(0, 0, 0) rotate(0) scale(1);
-        filter: blur(0);
       }
-    }
-
-    @keyframes wordGlow {
-      0%, 45% {
-        text-shadow:
-          0 3px 0 rgba(255,255,255,.86),
-          0 0 0 rgba(255,209,102,0),
-          0 12px 22px rgba(47,128,237,.12);
-      }
-      72% {
-        text-shadow:
-          0 3px 0 rgba(255,255,255,.9),
-          0 0 28px rgba(255,209,102,.72),
-          0 14px 26px rgba(47,128,237,.18);
-      }
-      100% {
-        text-shadow:
-          0 3px 0 rgba(255,255,255,.86),
-          0 0 12px rgba(255,209,102,.26),
-          0 12px 22px rgba(47,128,237,.12);
-      }
-    }
-
-    @keyframes shineSweep {
-      0% { opacity: 0; transform: translateX(-120%) skewX(-16deg); }
-      25% { opacity: .95; }
-      100% { opacity: 0; transform: translateX(120%) skewX(-16deg); }
     }
 
     @keyframes ribbonIn {
@@ -405,8 +415,8 @@
     }
 
     @keyframes ribbonPulse {
-      0%, 100% { opacity: .36; filter: blur(10px); }
-      50% { opacity: .62; filter: blur(14px); }
+      0%, 100% { opacity: .32; transform: translate(-50%, -50%) rotate(-7deg) scaleX(1); }
+      50% { opacity: .58; transform: translate(-50%, -50%) rotate(-7deg) scaleX(1.04); }
     }
 
     @media (max-width: 680px) {
@@ -435,6 +445,13 @@
     <div class="badge">READ · DREAM · GROW</div>
     <button class="music-tip" id="musicToggle" type="button" aria-label="开启或关闭背景音乐">开启音乐</button>
     <audio id="bgMusic" src="background.wav" loop preload="auto"></audio>
+    <div class="start-screen" id="startScreen">
+      <div class="start-panel">
+        <h1 class="start-title">好好读书</h1>
+        <p class="start-subtitle">点击开始后，文字和音乐会一起播放</p>
+        <button class="start-button" id="startButton" type="button">开始播放</button>
+      </div>
+    </div>
 
     <section class="scene active" data-duration="5600">
       <div class="ribbon"></div>
@@ -534,8 +551,11 @@
     const scenes = Array.from(document.querySelectorAll(".scene"));
     const musicToggle = document.querySelector("#musicToggle");
     const bgMusic = document.querySelector("#bgMusic");
+    const startScreen = document.querySelector("#startScreen");
+    const startButton = document.querySelector("#startButton");
     let current = 0;
     let timer = 0;
+    let started = false;
 
     function splitText() {
       document.querySelectorAll("[data-split]").forEach((node) => {
@@ -576,7 +596,7 @@
 
     async function startMusic(showTipOnBlock = true) {
       try {
-        bgMusic.volume = 0.72;
+        bgMusic.volume = 0.82;
         await bgMusic.play();
         musicToggle.textContent = "音乐播放中";
         musicToggle.classList.add("playing");
@@ -597,9 +617,17 @@
       musicToggle.classList.remove("playing");
     }
 
+    async function startExperience() {
+      if (started) return;
+      started = true;
+      startScreen.classList.add("hidden");
+      scenes[0].classList.remove("active");
+      void scenes[0].offsetWidth;
+      showScene(0);
+      await startMusic(false);
+    }
+
     splitText();
-    scheduleNext();
-    startMusic();
 
     musicToggle.addEventListener("click", () => {
       if (!bgMusic.paused) {
@@ -608,6 +636,8 @@
         startMusic(false);
       }
     });
+
+    startButton.addEventListener("click", startExperience);
   </script>
 </body>
 </html>
