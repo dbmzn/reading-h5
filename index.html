@@ -57,7 +57,7 @@
         radial-gradient(circle at 66% 26%, rgba(255, 255, 255, .62), transparent 10%),
         conic-gradient(from 120deg, rgba(255, 209, 102, .2), transparent 18%, rgba(47, 128, 237, .12), transparent 45%, rgba(47, 191, 113, .13), transparent 72%, rgba(239, 71, 111, .1));
       filter: blur(22px);
-      animation: aurora 28s linear infinite;
+      transform: rotate(8deg);
     }
 
     .stage::after {
@@ -93,7 +93,6 @@
         radial-gradient(circle, rgba(247,140,53,.48) 0 3px, transparent 4px),
         radial-gradient(circle, rgba(47,191,113,.42) 0 4px, transparent 4.8px);
       background-size: 126px 126px, 178px 178px, 214px 214px, 256px 256px;
-      animation: confettiDrift 32s linear infinite;
       opacity: .52;
     }
 
@@ -104,7 +103,7 @@
         linear-gradient(104deg, transparent 0 52%, rgba(255,209,102,.32) 56%, transparent 63%),
         linear-gradient(126deg, transparent 0 24%, rgba(117,213,255,.25) 29%, transparent 36%);
       mix-blend-mode: screen;
-      animation: beamSweep 12s ease-in-out infinite alternate;
+      opacity: .5;
     }
 
     .books {
@@ -121,7 +120,7 @@
       background-repeat: repeat-x;
       opacity: .38;
       transform-origin: center bottom;
-      animation: booksFloat 6.5s ease-in-out infinite;
+      transform: translateY(0);
     }
 
     .pencils {
@@ -253,18 +252,19 @@
       place-items: center;
       padding: clamp(24px, 6vw, 96px) clamp(18px, 6vw, 96px) clamp(76px, 12vh, 130px);
       opacity: 0;
-      transform: translateY(28px) scale(.985);
-      transition: opacity .72s ease, transform .72s ease;
+      transform: translate3d(0, 14px, 0);
+      transition: opacity .56s ease, transform .56s ease;
+      will-change: opacity, transform;
     }
 
     .scene.active {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: translate3d(0, 0, 0);
     }
 
     .scene.exit {
       opacity: 0;
-      transform: translateY(-26px) scale(1.018);
+      transform: translate3d(0, -12px, 0);
     }
 
     .copy {
@@ -322,34 +322,14 @@
     }
 
     .word {
-      position: relative;
       display: inline-block;
       min-width: .18em;
-      opacity: 0;
-      transform: translate3d(var(--dx), .9em, 0) rotate(var(--rot)) scale(.72);
-      transform-origin: center bottom;
-      will-change: transform, opacity;
+      opacity: 1;
+      transform: none;
     }
 
     .scene.active .word {
-      animation: wordIn .86s cubic-bezier(.16, .96, .24, 1) forwards;
-      animation-delay: calc(var(--i) * 42ms + 160ms);
-    }
-
-    .scene.active h1 .word {
-      animation-delay: calc(var(--i) * 52ms + 120ms);
-    }
-
-    .scene.active .line:nth-of-type(2) .word {
-      animation-delay: calc(var(--i) * 42ms + 560ms);
-    }
-
-    .scene.active .line:nth-of-type(3) .word {
-      animation-delay: calc(var(--i) * 42ms + 980ms);
-    }
-
-    .scene.active .line:nth-of-type(4) .word {
-      animation-delay: calc(var(--i) * 42ms + 1320ms);
+      animation: none;
     }
 
     .em-gold { color: #d88400; }
@@ -372,51 +352,13 @@
     }
 
     .scene.active .ribbon {
-      animation: ribbonIn 1.2s cubic-bezier(.18,.9,.22,1) .12s forwards, ribbonPulse 3.4s ease-in-out 1.4s infinite;
-    }
-
-    @keyframes aurora {
-      to { transform: rotate(360deg); }
-    }
-
-    @keyframes confettiDrift {
-      to { background-position: 126px 252px, -178px 178px, 214px -214px, -256px 256px; }
-    }
-
-    @keyframes beamSweep {
-      from { opacity: .22; transform: translateX(-3vw); }
-      to { opacity: .72; transform: translateX(3vw); }
-    }
-
-    @keyframes booksFloat {
-      0%, 100% { transform: translateY(0); opacity: .34; }
-      50% { transform: translateY(-8px); opacity: .48; }
-    }
-
-    @keyframes wordIn {
-      0% {
-        opacity: 0;
-        transform: translate3d(var(--dx), .9em, 0) rotate(var(--rot)) scale(.72);
-      }
-      58% {
-        opacity: 1;
-        transform: translate3d(0, -.13em, 0) rotate(0) scale(1.08);
-      }
-      to {
-        opacity: 1;
-        transform: translate3d(0, 0, 0) rotate(0) scale(1);
-      }
+      animation: ribbonIn .85s ease .08s forwards;
     }
 
     @keyframes ribbonIn {
       0% { opacity: 0; transform: translate(-50%, -50%) rotate(-7deg) scaleX(0); }
       35% { opacity: .95; }
       100% { opacity: .5; transform: translate(-50%, -50%) rotate(-7deg) scaleX(1); }
-    }
-
-    @keyframes ribbonPulse {
-      0%, 100% { opacity: .32; transform: translate(-50%, -50%) rotate(-7deg) scaleX(1); }
-      50% { opacity: .58; transform: translate(-50%, -50%) rotate(-7deg) scaleX(1.04); }
     }
 
     @media (max-width: 680px) {
@@ -556,22 +498,9 @@
     let current = 0;
     let timer = 0;
     let started = false;
-
-    function splitText() {
-      document.querySelectorAll("[data-split]").forEach((node) => {
-        const text = node.textContent.trim();
-        node.textContent = "";
-        Array.from(text).forEach((char, index) => {
-          const span = document.createElement("span");
-          span.className = "word";
-          span.style.setProperty("--i", index);
-          span.style.setProperty("--dx", `${((index % 5) - 2) * 10}px`);
-          span.style.setProperty("--rot", `${((index % 7) - 3) * 2}deg`);
-          span.textContent = char === " " ? "\u00a0" : char;
-          node.appendChild(span);
-        });
-      });
-    }
+    let userPausedMusic = false;
+    let lastMusicTime = 0;
+    let musicStallCount = 0;
 
     function showScene(index) {
       window.clearTimeout(timer);
@@ -597,6 +526,8 @@
     async function startMusic(showTipOnBlock = true) {
       try {
         bgMusic.volume = 0.82;
+        bgMusic.loop = true;
+        userPausedMusic = false;
         await bgMusic.play();
         musicToggle.textContent = "音乐播放中";
         musicToggle.classList.add("playing");
@@ -610,7 +541,31 @@
       }
     }
 
+    function keepMusicAlive() {
+      if (!started || userPausedMusic || document.hidden) return;
+      if (bgMusic.paused) {
+        bgMusic.play().catch(() => {});
+        return;
+      }
+      if (bgMusic.duration && bgMusic.currentTime > bgMusic.duration - 0.35) {
+        bgMusic.currentTime = 0;
+        bgMusic.play().catch(() => {});
+      }
+      if (Math.abs(bgMusic.currentTime - lastMusicTime) < 0.02) {
+        musicStallCount += 1;
+      } else {
+        musicStallCount = 0;
+      }
+      lastMusicTime = bgMusic.currentTime;
+      if (musicStallCount >= 4) {
+        musicStallCount = 0;
+        bgMusic.load();
+        bgMusic.play().catch(() => {});
+      }
+    }
+
     function stopMusic() {
+      userPausedMusic = true;
       bgMusic.pause();
       musicToggle.textContent = "开启音乐";
       musicToggle.classList.add("show");
@@ -627,8 +582,6 @@
       await startMusic(false);
     }
 
-    splitText();
-
     musicToggle.addEventListener("click", () => {
       if (!bgMusic.paused) {
         stopMusic();
@@ -638,6 +591,23 @@
     });
 
     startButton.addEventListener("click", startExperience);
+    bgMusic.addEventListener("ended", () => {
+      if (started && !userPausedMusic) {
+        bgMusic.currentTime = 0;
+        bgMusic.play().catch(() => {});
+      }
+    });
+    bgMusic.addEventListener("pause", () => {
+      if (started && !userPausedMusic && !document.hidden) {
+        window.setTimeout(() => bgMusic.play().catch(() => {}), 250);
+      }
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (started && !userPausedMusic && !document.hidden) {
+        bgMusic.play().catch(() => {});
+      }
+    });
+    window.setInterval(keepMusicAlive, 1000);
   </script>
 </body>
 </html>
