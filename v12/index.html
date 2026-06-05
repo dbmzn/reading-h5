@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>读书，是奔赴远方</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --sun: #ffd166;
+      --paper: #fffaf0;
+      --ink: #244064;
+      --blue: #2f80ed;
+      --red: #ef476f;
+      --green: #2fbf71;
+      --violet: #7b61ff;
+      --orange: #f78c35;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #eaf8ff;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", system-ui, sans-serif;
+    }
+
+    body {
+      color: var(--ink);
+    }
+
+    .stage {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      isolation: isolate;
+      background:
+        radial-gradient(circle at 15% 18%, rgba(255, 209, 102, .75), transparent 24%),
+        radial-gradient(circle at 82% 20%, rgba(117, 213, 255, .55), transparent 26%),
+        radial-gradient(circle at 20% 82%, rgba(143, 226, 168, .5), transparent 24%),
+        linear-gradient(180deg, #dff6ff 0%, #fff7de 58%, #e9f8df 100%);
+    }
+
+    .stage::before {
+      content: "";
+      position: absolute;
+      inset: -18vmax;
+      z-index: -4;
+      background:
+        radial-gradient(circle at 28% 32%, rgba(255, 255, 255, .72), transparent 12%),
+        radial-gradient(circle at 66% 26%, rgba(255, 255, 255, .62), transparent 10%),
+        conic-gradient(from 120deg, rgba(255, 209, 102, .2), transparent 18%, rgba(47, 128, 237, .12), transparent 45%, rgba(47, 191, 113, .13), transparent 72%, rgba(239, 71, 111, .1));
+      filter: blur(22px);
+      transform: rotate(8deg);
+    }
+
+    .stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(36,64,100,.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(36,64,100,.055) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: radial-gradient(circle at center, black 0 66%, transparent 88%);
+      opacity: .5;
+      z-index: -2;
+    }
+
+    .confetti,
+    .sunbeams,
+    .books,
+    .pencils,
+    .noise,
+    .soft-edge {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .confetti {
+      z-index: -3;
+      background-image:
+        radial-gradient(circle, rgba(239,71,111,.55) 0 4px, transparent 4.8px),
+        radial-gradient(circle, rgba(47,128,237,.45) 0 3px, transparent 3.8px),
+        radial-gradient(circle, rgba(247,140,53,.48) 0 3px, transparent 4px),
+        radial-gradient(circle, rgba(47,191,113,.42) 0 4px, transparent 4.8px);
+      background-size: 126px 126px, 178px 178px, 214px 214px, 256px 256px;
+      opacity: .52;
+    }
+
+    .sunbeams {
+      z-index: -1;
+      background:
+        linear-gradient(78deg, transparent 0 37%, rgba(255,255,255,.45) 41%, transparent 47%),
+        linear-gradient(104deg, transparent 0 52%, rgba(255,209,102,.32) 56%, transparent 63%),
+        linear-gradient(126deg, transparent 0 24%, rgba(117,213,255,.25) 29%, transparent 36%);
+      mix-blend-mode: screen;
+      opacity: .5;
+    }
+
+    .books {
+      top: auto;
+      height: 33vh;
+      bottom: 0;
+      z-index: 0;
+      background:
+        linear-gradient(90deg, transparent 0 10%, rgba(47,128,237,.82) 10% 19%, transparent 19% 22%, rgba(255,209,102,.86) 22% 31%, transparent 31% 34%, rgba(47,191,113,.8) 34% 43%, transparent 43% 47%, rgba(239,71,111,.78) 47% 56%, transparent 56% 100%),
+        linear-gradient(90deg, transparent 0 58%, rgba(247,140,53,.8) 58% 67%, transparent 67% 70%, rgba(123,97,255,.72) 70% 79%, transparent 79%),
+        linear-gradient(to top, rgba(106, 167, 112, .2), transparent 66%);
+      background-size: 420px 64px, 360px 58px, 100% 100%;
+      background-position: 0 75%, 80px 92%, 0 0;
+      background-repeat: repeat-x;
+      opacity: .38;
+      transform-origin: center bottom;
+      transform: translateY(0);
+    }
+
+    .pencils {
+      z-index: -1;
+      background:
+        linear-gradient(112deg, transparent 0 12%, rgba(255, 209, 102, .55) 12.2% 12.8%, transparent 13.1%),
+        linear-gradient(63deg, transparent 0 78%, rgba(239, 71, 111, .35) 78.2% 78.8%, transparent 79.1%),
+        linear-gradient(28deg, transparent 0 64%, rgba(47, 128, 237, .34) 64.2% 64.8%, transparent 65.1%);
+      opacity: .6;
+    }
+
+    .noise {
+      opacity: .055;
+      mix-blend-mode: multiply;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.72'/%3E%3C/svg%3E");
+    }
+
+    .soft-edge {
+      z-index: 6;
+      box-shadow: inset 0 0 9vw rgba(255,255,255,.34), inset 0 -10vh 16vh rgba(117, 180, 116, .16);
+    }
+
+    .badge {
+      position: fixed;
+      left: clamp(18px, 4vw, 44px);
+      top: clamp(16px, 3vw, 30px);
+      z-index: 10;
+      color: rgba(36, 64, 100, .58);
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .14em;
+    }
+
+    .music-tip {
+      position: fixed;
+      right: clamp(18px, 4vw, 44px);
+      top: clamp(16px, 3vw, 30px);
+      z-index: 10;
+      min-height: 38px;
+      padding: 0 14px;
+      border: 2px solid rgba(36, 64, 100, .12);
+      border-radius: 8px;
+      color: rgba(36, 64, 100, .72);
+      background: rgba(255, 250, 240, .72);
+      box-shadow: 0 8px 22px rgba(47, 128, 237, .1);
+      backdrop-filter: blur(8px);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity .25s ease, transform .25s ease;
+    }
+
+    .music-tip.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .music-tip.playing {
+      opacity: .82;
+    }
+
+    .scene {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: clamp(24px, 6vw, 96px) clamp(18px, 6vw, 96px) clamp(76px, 12vh, 130px);
+      opacity: 0;
+      transform: translate3d(0, 14px, 0);
+      transition: opacity .56s ease, transform .56s ease;
+      will-change: opacity, transform;
+    }
+
+    .scene.active {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+
+    .scene.active .kicker,
+    .scene.active h1,
+    .scene.active .line {
+      animation: lineIn .68s cubic-bezier(.18, .88, .28, 1) both;
+    }
+
+    .scene.active h1 {
+      animation-delay: .08s;
+    }
+
+    .scene.active .line:nth-of-type(1) {
+      animation-delay: .2s;
+    }
+
+    .scene.active .line:nth-of-type(2) {
+      animation-delay: .34s;
+    }
+
+    .scene.active .line:nth-of-type(3) {
+      animation-delay: .48s;
+    }
+
+    .scene.active .line:nth-of-type(4) {
+      animation-delay: .62s;
+    }
+
+    .scene.exit {
+      opacity: 0;
+      transform: translate3d(0, -12px, 0);
+    }
+
+    .copy {
+      width: min(1040px, 92vw);
+      padding: clamp(22px, 4vw, 42px);
+      border: 3px solid rgba(36, 64, 100, .1);
+      border-radius: 28px;
+      background:
+        linear-gradient(90deg, rgba(36,64,100,.035) 1px, transparent 1px) 0 0 / 100% 34px,
+        rgba(255, 250, 240, .82);
+      box-shadow:
+        0 18px 55px rgba(47, 128, 237, .12),
+        0 8px 0 rgba(255, 209, 102, .22);
+      backdrop-filter: blur(8px);
+      text-align: center;
+      text-wrap: balance;
+    }
+
+    .kicker {
+      margin: 0 0 18px;
+      color: var(--orange);
+      font-size: clamp(13px, 1.6vw, 18px);
+      font-weight: 900;
+      letter-spacing: .24em;
+      text-transform: uppercase;
+      opacity: .9;
+    }
+
+    h1,
+    .line {
+      margin: 0;
+      font-weight: 900;
+      line-height: 1.18;
+      letter-spacing: 0;
+      text-shadow:
+        0 3px 0 rgba(255,255,255,.86),
+        0 12px 22px rgba(47,128,237,.12);
+    }
+
+    h1 {
+      font-size: clamp(36px, 7vw, 96px);
+    }
+
+    .line {
+      display: block;
+      font-size: clamp(25px, 4.5vw, 68px);
+    }
+
+    .line + .line {
+      margin-top: clamp(14px, 2.2vw, 26px);
+    }
+
+    .small .line {
+      font-size: clamp(22px, 3.55vw, 56px);
+    }
+
+    .word {
+      display: inline-block;
+      min-width: .18em;
+      opacity: 1;
+      transform: none;
+    }
+
+    .scene.active .word {
+      animation: none;
+    }
+
+    .em-gold { color: #d88400; }
+    .em-blue { color: var(--blue); }
+    .em-red { color: var(--red); }
+    .em-green { color: var(--green); }
+    .em-violet { color: var(--violet); }
+
+    .ribbon {
+      position: absolute;
+      width: 95vmax;
+      height: 16vh;
+      left: 50%;
+      top: 50%;
+      z-index: -1;
+      transform: translate(-50%, -50%) rotate(-7deg) scaleX(0);
+      transform-origin: left center;
+      background: linear-gradient(90deg, transparent, rgba(255,209,102,.34), rgba(117,213,255,.22), transparent);
+      opacity: 0;
+    }
+
+    .scene.active .ribbon {
+      animation: ribbonIn .85s ease .08s forwards;
+    }
+
+    @keyframes ribbonIn {
+      0% { opacity: 0; transform: translate(-50%, -50%) rotate(-7deg) scaleX(0); }
+      35% { opacity: .95; }
+      100% { opacity: .5; transform: translate(-50%, -50%) rotate(-7deg) scaleX(1); }
+    }
+
+    @keyframes lineIn {
+      from {
+        opacity: 0;
+        transform: translate3d(0, 18px, 0) scale(.985);
+      }
+      to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+    }
+
+    @media (max-width: 680px) {
+      .scene {
+        padding: 24px 18px 96px;
+      }
+
+      .copy {
+        width: 100%;
+        border-radius: 20px;
+      }
+
+      .line + .line {
+        margin-top: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" aria-label="读书励志动画">
+    <div class="confetti"></div>
+    <div class="sunbeams"></div>
+    <div class="pencils"></div>
+    <div class="books"></div>
+    <div class="noise"></div>
+    <div class="badge">READ · DREAM · GROW</div>
+    <button class="music-tip" id="musicToggle" type="button" aria-label="开启或关闭背景音乐">开启音乐</button>
+    <audio id="bgMusic" src="background.wav" loop preload="auto" playsinline webkit-playsinline x5-playsinline></audio>
+
+    <section class="scene active" data-duration="5600">
+      <div class="ribbon"></div>
+      <div class="copy">
+        <p class="kicker">相信自己，保持乐观</p>
+        <h1 data-split>好好读书</h1>
+        <span class="line em-gold" data-split>去过想要的生活</span>
+      </div>
+    </section>
+
+    <section class="scene" data-duration="6500">
+      <div class="ribbon"></div>
+      <div class="copy small">
+        <span class="line" data-split>我们是穷人家的孩子</span>
+        <span class="line em-gold" data-split>读书是唯一的出路</span>
+        <span class="line em-blue" data-split>相信自己，保持乐观，好好读书</span>
+      </div>
+    </section>
+
+    <section class="scene" data-duration="7200">
+      <div class="ribbon"></div>
+      <div class="copy small">
+        <span class="line" data-split>读书的目的</span>
+        <span class="line em-green" data-split>是为了过上想要的生活</span>
+        <span class="line em-red" data-split>敢于对不想要的东西说不</span>
+      </div>
+    </section>
+
+    <section class="scene" data-duration="7000">
+      <div class="ribbon"></div>
+      <div class="copy small">
+        <span class="line" data-split>敢于拒绝自己不喜欢做的事</span>
+        <span class="line em-gold" data-split>遇事不怕事</span>
+        <span class="line em-blue" data-split>做事不拖拉</span>
+      </div>
+    </section>
+
+    <section class="scene" data-duration="7000">
+      <div class="ribbon"></div>
+      <div class="copy small">
+        <span class="line" data-split>守规矩，立目标</span>
+        <span class="line em-violet" data-split>明晰心中所想</span>
+        <span class="line em-green" data-split>人生不迷茫，前行不偏航</span>
+      </div>
+    </section>
+
+    <section class="scene" data-duration="6800">
+      <div class="ribbon"></div>
+      <div class="copy small">
+        <span class="line" data-split>做人做事</span>
+        <span class="line em-gold" data-split>诚信讲道理</span>
+        <span class="line em-blue" data-split>不贪玩，不贪小便宜，全心专注学习</span>
+      </div>
+    </section>
+
+    <section class="scene" data-duration="7600">
+      <div class="ribbon"></div>
+      <div class="copy small">
+        <span class="line" data-split>潜心读书</span>
+        <span class="line em-gold" data-split>为将来奔赴远方</span>
+        <span class="line em-red" data-split>遇事不胆怯，提防他人算计</span>
+      </div>
+    </section>
+
+    <section class="scene" data-duration="7600">
+      <div class="ribbon"></div>
+      <div class="copy small">
+        <span class="line" data-split>知法律，明规则，懂情理</span>
+        <span class="line em-blue" data-split>认真读书识字</span>
+        <span class="line em-green" data-split>长大方能认清自我</span>
+      </div>
+    </section>
+
+    <section class="scene" data-duration="8200">
+      <div class="ribbon"></div>
+      <div class="copy small">
+        <span class="line" data-split>明白自己想要什么、能得到什么</span>
+        <span class="line em-gold" data-split>拥有底气</span>
+        <span class="line em-red" data-split>随心拒绝不喜之事</span>
+      </div>
+    </section>
+
+    <section class="scene" data-duration="9800">
+      <div class="ribbon"></div>
+      <div class="copy small">
+        <span class="line" data-split>待人留三分尊重</span>
+        <span class="line em-green" data-split>七分守住本心</span>
+        <span class="line em-red" data-split>远离烂人，不交品行不端、没有分寸的狐朋好友</span>
+        <span class="line em-gold" data-split>二十五岁之前，不谈恋爱</span>
+      </div>
+    </section>
+
+    <div class="soft-edge"></div>
+  </main>
+
+  <script>
+    const scenes = Array.from(document.querySelectorAll(".scene"));
+    const musicToggle = document.querySelector("#musicToggle");
+    const bgMusic = document.querySelector("#bgMusic");
+    let current = 0;
+    let timer = 0;
+    let started = false;
+    let userPausedMusic = false;
+
+    function showScene(index) {
+      window.clearTimeout(timer);
+      scenes[current].classList.remove("active");
+      scenes[current].classList.add("exit");
+      current = (index + scenes.length) % scenes.length;
+      scenes.forEach((scene, sceneIndex) => {
+        if (sceneIndex !== current) {
+          scene.classList.remove("active");
+          window.setTimeout(() => scene.classList.remove("exit"), 850);
+        }
+      });
+      scenes[current].classList.remove("exit");
+      scenes[current].classList.add("active");
+      scheduleNext();
+    }
+
+    function scheduleNext() {
+      const duration = Number(scenes[current].dataset.duration || 6500);
+      timer = window.setTimeout(() => showScene(current + 1), duration);
+    }
+
+    async function startMusic(showTipOnBlock = true) {
+      try {
+        userPausedMusic = false;
+        bgMusic.volume = 0.82;
+        bgMusic.loop = true;
+        bgMusic.currentTime = bgMusic.currentTime || 0;
+        await bgMusic.play();
+        musicToggle.textContent = "音乐播放中";
+        musicToggle.classList.add("playing");
+        musicToggle.classList.add("show");
+        return true;
+      } catch (error) {
+        musicToggle.textContent = "点击开启音乐";
+        musicToggle.classList.add("show");
+        musicToggle.classList.remove("playing");
+        return false;
+      }
+    }
+
+    function keepMusicAlive() {
+      if (!started || userPausedMusic || document.hidden) return;
+      if (bgMusic.paused) {
+        bgMusic.play().catch(() => {});
+      }
+      if (bgMusic.duration && bgMusic.currentTime > bgMusic.duration - 0.25) {
+        bgMusic.currentTime = 0;
+        bgMusic.play().catch(() => {});
+      }
+    }
+
+    function stopMusic() {
+      userPausedMusic = true;
+      bgMusic.pause();
+      musicToggle.textContent = "开启音乐";
+      musicToggle.classList.add("show");
+      musicToggle.classList.remove("playing");
+    }
+
+    async function startExperience() {
+      if (started) return;
+      started = true;
+      scenes[0].classList.remove("active");
+      void scenes[0].offsetWidth;
+      showScene(0);
+      musicToggle.textContent = "开启音乐";
+      musicToggle.classList.add("show");
+    }
+
+    musicToggle.addEventListener("click", () => {
+      if (!bgMusic.paused && !userPausedMusic) {
+        stopMusic();
+      } else {
+        startMusic(false);
+      }
+    });
+
+    startExperience();
+    document.addEventListener("visibilitychange", () => {
+      if (started && !userPausedMusic && !document.hidden) {
+        bgMusic.play().catch(() => {});
+      }
+    });
+    document.addEventListener("WeixinJSBridgeReady", () => {
+      if (started && !userPausedMusic) {
+        startMusic(false);
+      }
+    }, false);
+    window.setInterval(keepMusicAlive, 1000);
+  </script>
+</body>
+</html>
