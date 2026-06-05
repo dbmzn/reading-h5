@@ -265,17 +265,34 @@
     }
 
     .word {
+      position: relative;
       display: inline-block;
       min-width: .18em;
       opacity: 0;
-      transform: translateY(.72em) rotate(-3deg) scale(.88);
+      transform: translate3d(calc((var(--i) % 5 - 2) * 10px), .9em, 0) rotate(calc((var(--i) % 7 - 3) * 2deg)) scale(.72);
       transform-origin: center bottom;
-      filter: blur(4px);
+      filter: blur(8px);
+      will-change: transform, opacity, filter;
+    }
+
+    .word::after {
+      content: "";
+      position: absolute;
+      inset: -12% -18%;
+      background: linear-gradient(110deg, transparent 0 35%, rgba(255,255,255,.95) 48%, transparent 62% 100%);
+      opacity: 0;
+      transform: translateX(-120%) skewX(-16deg);
+      pointer-events: none;
     }
 
     .scene.active .word {
-      animation: wordIn .78s cubic-bezier(.2, .85, .22, 1) forwards;
+      animation: wordIn 1.05s cubic-bezier(.16, .96, .24, 1) forwards, wordGlow 1.7s ease-out forwards;
       animation-delay: calc(var(--i) * 42ms + 160ms);
+    }
+
+    .scene.active .word::after {
+      animation: shineSweep .72s ease-out forwards;
+      animation-delay: calc(var(--i) * 42ms + 300ms);
     }
 
     .scene.active h1 .word {
@@ -315,7 +332,7 @@
     }
 
     .scene.active .ribbon {
-      animation: ribbonIn 1.2s cubic-bezier(.18,.9,.22,1) .12s forwards;
+      animation: ribbonIn 1.35s cubic-bezier(.18,.9,.22,1) .12s forwards, ribbonPulse 3.4s ease-in-out 1.4s infinite;
     }
 
     @keyframes aurora {
@@ -337,17 +354,59 @@
     }
 
     @keyframes wordIn {
-      to {
+      0% {
+        opacity: 0;
+        transform: translate3d(calc((var(--i) % 5 - 2) * 10px), .9em, 0) rotate(calc((var(--i) % 7 - 3) * 2deg)) scale(.72);
+        filter: blur(8px);
+      }
+      58% {
         opacity: 1;
-        transform: translateY(0) rotate(0) scale(1);
+        transform: translate3d(0, -.13em, 0) rotate(0) scale(1.08);
         filter: blur(0);
       }
+      to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) rotate(0) scale(1);
+        filter: blur(0);
+      }
+    }
+
+    @keyframes wordGlow {
+      0%, 45% {
+        text-shadow:
+          0 3px 0 rgba(255,255,255,.86),
+          0 0 0 rgba(255,209,102,0),
+          0 12px 22px rgba(47,128,237,.12);
+      }
+      72% {
+        text-shadow:
+          0 3px 0 rgba(255,255,255,.9),
+          0 0 28px rgba(255,209,102,.72),
+          0 14px 26px rgba(47,128,237,.18);
+      }
+      100% {
+        text-shadow:
+          0 3px 0 rgba(255,255,255,.86),
+          0 0 12px rgba(255,209,102,.26),
+          0 12px 22px rgba(47,128,237,.12);
+      }
+    }
+
+    @keyframes shineSweep {
+      0% { opacity: 0; transform: translateX(-120%) skewX(-16deg); }
+      25% { opacity: .95; }
+      100% { opacity: 0; transform: translateX(120%) skewX(-16deg); }
     }
 
     @keyframes ribbonIn {
       0% { opacity: 0; transform: translate(-50%, -50%) rotate(-7deg) scaleX(0); }
       35% { opacity: .95; }
       100% { opacity: .5; transform: translate(-50%, -50%) rotate(-7deg) scaleX(1); }
+    }
+
+    @keyframes ribbonPulse {
+      0%, 100% { opacity: .36; filter: blur(10px); }
+      50% { opacity: .62; filter: blur(14px); }
     }
 
     @media (max-width: 680px) {
@@ -375,6 +434,7 @@
     <div class="noise"></div>
     <div class="badge">READ · DREAM · GROW</div>
     <button class="music-tip" id="musicToggle" type="button" aria-label="开启或关闭背景音乐">开启音乐</button>
+    <audio id="bgMusic" src="background.wav" loop preload="auto"></audio>
 
     <section class="scene active" data-duration="5600">
       <div class="ribbon"></div>
@@ -473,42 +533,9 @@
   <script>
     const scenes = Array.from(document.querySelectorAll(".scene"));
     const musicToggle = document.querySelector("#musicToggle");
+    const bgMusic = document.querySelector("#bgMusic");
     let current = 0;
     let timer = 0;
-    let audioContext = null;
-    let musicTimer = 0;
-    let musicPlaying = false;
-    let muted = false;
-
-    const melody = [
-      ["D4", 2], ["F#4", 2], ["A4", 2], ["B4", 2],
-      ["A4", 3], ["F#4", 1], ["G4", 2], ["A4", 2],
-      ["B4", 2], ["A4", 2], ["F#4", 2], ["E4", 2],
-      ["D4", 4], ["REST", 2],
-      ["F#4", 2], ["A4", 2], ["D5", 3], ["C#5", 1],
-      ["B4", 2], ["A4", 2], ["G4", 2], ["A4", 2],
-      ["F#4", 3], ["E4", 1], ["D4", 4], ["REST", 2]
-    ];
-
-    const chords = [
-      ["D3", "A3", "D4", "F#4"],
-      ["A2", "E3", "A3", "C#4"],
-      ["B2", "F#3", "B3", "D4"],
-      ["G2", "D3", "G3", "B3"],
-      ["D3", "A3", "D4", "F#4"],
-      ["A2", "E3", "A3", "C#4"],
-      ["G2", "D3", "G3", "B3"],
-      ["A2", "E3", "A3", "C#4"]
-    ];
-
-    const bassLine = ["D2", "A1", "B1", "G1", "D2", "A1", "G1", "A1"];
-
-    const noteFrequency = {
-      G1: 49, A1: 55, B1: 61.74, D2: 73.42, G2: 98, A2: 110, B2: 123.47,
-      D3: 146.83, E3: 164.81, F#3: 185, G3: 196, A3: 220, B3: 246.94,
-      C#4: 277.18, D4: 293.66, E4: 329.63, F#4: 369.99, G4: 392, A4: 440, B4: 493.88,
-      C#5: 554.37, D5: 587.33
-    };
 
     function splitText() {
       document.querySelectorAll("[data-split]").forEach((node) => {
@@ -545,93 +572,14 @@
       timer = window.setTimeout(() => showScene(current + 1), duration);
     }
 
-    function ensureAudioContext() {
-      if (!audioContext) {
-        audioContext = new AudioContext();
-      }
-      return audioContext;
-    }
-
-    function playTone(note, start, beatLength, options = {}) {
-      if (note === "REST") return;
-      const context = ensureAudioContext();
-      const frequency = noteFrequency[note];
-      const osc = context.createOscillator();
-      const gain = context.createGain();
-      const filter = context.createBiquadFilter();
-      const type = options.type || "sine";
-      const volume = options.volume || 0.055;
-      const attack = options.attack || 0.18;
-      const releaseAt = options.releaseAt || 0.96;
-      const cutoff = options.cutoff || 920;
-      osc.type = type;
-      osc.frequency.setValueAtTime(frequency, start);
-      filter.type = "lowpass";
-      filter.frequency.setValueAtTime(cutoff, start);
-      filter.Q.setValueAtTime(0.6, start);
-      gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(volume, start + attack);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + beatLength * releaseAt);
-      osc.connect(filter).connect(gain).connect(context.destination);
-      osc.start(start);
-      osc.stop(start + beatLength);
-    }
-
-    function playChord(notes, start, beatLength) {
-      notes.forEach((note, index) => {
-        playTone(note, start + index * 0.035, beatLength, {
-          type: "sawtooth",
-          volume: 0.018,
-          attack: 0.55,
-          releaseAt: 0.98,
-          cutoff: 560
-        });
-      });
-    }
-
-    function scheduleMusicLoop() {
-      if (!musicPlaying || muted) return;
-      const context = ensureAudioContext();
-      const beat = 0.62;
-      let cursor = context.currentTime + 0.08;
-      let harmonyCursor = cursor;
-      chords.forEach((chord, index) => {
-        playChord(chord, harmonyCursor, beat * 8);
-        playTone(bassLine[index], harmonyCursor, beat * 7.4, {
-          type: "sine",
-          volume: 0.05,
-          attack: 0.18,
-          releaseAt: 0.98,
-          cutoff: 260
-        });
-        harmonyCursor += beat * 8;
-      });
-      melody.forEach(([note, beats]) => {
-        playTone(note, cursor, beat * beats, {
-          type: "sine",
-          volume: 0.062,
-          attack: 0.12,
-          releaseAt: 0.94,
-          cutoff: 760
-        });
-        cursor += beat * beats;
-      });
-      musicTimer = window.setTimeout(scheduleMusicLoop, Math.max(1000, (cursor - context.currentTime - 0.3) * 1000));
-    }
-
     async function startMusic(showTipOnBlock = true) {
       try {
-        const context = ensureAudioContext();
-        await context.resume();
-        if (!musicPlaying) {
-          musicPlaying = true;
-          muted = false;
-          musicToggle.textContent = "音乐播放中";
-          musicToggle.classList.add("playing");
-          musicToggle.classList.add("show");
-          scheduleMusicLoop();
-          window.setTimeout(() => musicToggle.classList.remove("show"), 2200);
-        }
+        bgMusic.volume = 0.72;
+        await bgMusic.play();
+        musicToggle.textContent = "音乐播放中";
+        musicToggle.classList.add("playing");
+        musicToggle.classList.add("show");
+        window.setTimeout(() => musicToggle.classList.remove("show"), 2200);
       } catch (error) {
         if (showTipOnBlock) {
           musicToggle.textContent = "开启音乐";
@@ -641,10 +589,7 @@
     }
 
     function stopMusic() {
-      muted = true;
-      musicPlaying = false;
-      window.clearTimeout(musicTimer);
-      if (audioContext) audioContext.suspend();
+      bgMusic.pause();
       musicToggle.textContent = "开启音乐";
       musicToggle.classList.add("show");
       musicToggle.classList.remove("playing");
@@ -655,7 +600,7 @@
     startMusic();
 
     musicToggle.addEventListener("click", () => {
-      if (musicPlaying && !muted) {
+      if (!bgMusic.paused) {
         stopMusic();
       } else {
         startMusic(false);
