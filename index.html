@@ -185,66 +185,6 @@
       opacity: .72;
     }
 
-    .start-screen {
-      position: fixed;
-      inset: 0;
-      z-index: 30;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-      background:
-        radial-gradient(circle at 24% 20%, rgba(255, 209, 102, .82), transparent 28%),
-        radial-gradient(circle at 78% 26%, rgba(117, 213, 255, .7), transparent 30%),
-        linear-gradient(180deg, rgba(223,246,255,.96), rgba(255,247,222,.96));
-      transition: opacity .55s ease, visibility .55s ease;
-    }
-
-    .start-screen.hidden {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-    }
-
-    .start-panel {
-      width: min(720px, 92vw);
-      padding: clamp(28px, 5vw, 54px);
-      border: 3px solid rgba(36, 64, 100, .1);
-      border-radius: 28px;
-      background: rgba(255, 250, 240, .88);
-      box-shadow: 0 24px 70px rgba(47, 128, 237, .16), 0 8px 0 rgba(255, 209, 102, .28);
-      text-align: center;
-    }
-
-    .start-title {
-      margin: 0 0 12px;
-      color: var(--ink);
-      font-size: clamp(34px, 7vw, 76px);
-      line-height: 1.1;
-      font-weight: 900;
-    }
-
-    .start-subtitle {
-      margin: 0 0 28px;
-      color: rgba(36, 64, 100, .72);
-      font-size: clamp(16px, 2.2vw, 22px);
-      font-weight: 800;
-      line-height: 1.7;
-    }
-
-    .start-button {
-      min-width: 190px;
-      min-height: 54px;
-      border: 0;
-      border-radius: 8px;
-      color: #fff;
-      background: linear-gradient(135deg, #2f80ed, #2fbf71);
-      box-shadow: 0 14px 34px rgba(47, 128, 237, .28);
-      cursor: pointer;
-      font-size: 18px;
-      font-weight: 900;
-      letter-spacing: .08em;
-    }
-
     .scene {
       position: absolute;
       inset: 0;
@@ -424,13 +364,6 @@
     <div class="badge">READ · DREAM · GROW</div>
     <button class="music-tip" id="musicToggle" type="button" aria-label="开启或关闭背景音乐">开启音乐</button>
     <audio id="bgMusic" src="background.wav" loop preload="auto" playsinline></audio>
-    <div class="start-screen" id="startScreen">
-      <div class="start-panel">
-        <h1 class="start-title">好好读书</h1>
-        <p class="start-subtitle">点击开始后，文字和音乐会一起播放</p>
-        <button class="start-button" id="startButton" type="button">开始播放</button>
-      </div>
-    </div>
 
     <section class="scene active" data-duration="5600">
       <div class="ribbon"></div>
@@ -530,8 +463,6 @@
     const scenes = Array.from(document.querySelectorAll(".scene"));
     const musicToggle = document.querySelector("#musicToggle");
     const bgMusic = document.querySelector("#bgMusic");
-    const startScreen = document.querySelector("#startScreen");
-    const startButton = document.querySelector("#startButton");
     let current = 0;
     let timer = 0;
     let started = false;
@@ -542,6 +473,8 @@
     let musicGain = null;
     let musicStartedAt = 0;
     let musicOffset = 0;
+    let audioLoading = false;
+    let audioUnlocked = false;
 
     function showScene(index) {
       window.clearTimeout(timer);
@@ -564,24 +497,66 @@
       timer = window.setTimeout(() => showScene(current + 1), duration);
     }
 
+    function ensureAudioContext() {
+      if (!audioContext) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) throw new Error("AudioContext is not supported");
+        audioContext = new AudioContextClass();
+        musicGain = audioContext.createGain();
+        musicGain.gain.value = 0.82;
+        musicGain.connect(audioContext.destination);
+      }
+      return audioContext;
+    }
+
+    function unlockAudioContext() {
+      if (!audioContext || audioUnlocked) return;
+      const buffer = audioContext.createBuffer(1, 1, audioContext.sampleRate);
+      const source = audioContext.createBufferSource();
+      const gain = audioContext.createGain();
+      gain.gain.value = 0;
+      source.buffer = buffer;
+      source.connect(gain).connect(audioContext.destination);
+      source.start(0);
+      audioUnlocked = true;
+    }
+
+    function startFallbackAudio() {
+      bgMusic.volume = 0.82;
+      bgMusic.loop = true;
+      bgMusic.play().catch(() => {});
+    }
+
+    async function loadAudioBuffer() {
+      if (audioBuffer || audioLoading) return audioBuffer;
+      audioLoading = true;
+      musicToggle.textContent = "音乐加载中";
+      musicToggle.classList.add("show");
+      try {
+        const response = await fetch("background.wav?v=10", { cache: "force-cache" });
+        const arrayBuffer = await response.arrayBuffer();
+        audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        return audioBuffer;
+      } finally {
+        audioLoading = false;
+      }
+    }
+
     async function startMusic(showTipOnBlock = true) {
       try {
         userPausedMusic = false;
-        if (!audioContext) {
-          audioContext = new (window.AudioContext || window.webkitAudioContext)();
-          musicGain = audioContext.createGain();
-          musicGain.gain.value = 0.82;
-          musicGain.connect(audioContext.destination);
-        }
+        ensureAudioContext();
         await audioContext.resume();
+        if (audioContext.state !== "running") {
+          throw new Error("Audio playback is blocked");
+        }
+        unlockAudioContext();
+        startFallbackAudio();
         if (!audioBuffer) {
-          musicToggle.textContent = "音乐加载中";
-          musicToggle.classList.add("show");
-          const response = await fetch("background.wav", { cache: "force-cache" });
-          const arrayBuffer = await response.arrayBuffer();
-          audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+          await loadAudioBuffer();
         }
         startBufferedMusic();
+        bgMusic.pause();
         musicToggle.textContent = "音乐播放中";
         musicToggle.classList.add("playing");
         musicToggle.classList.add("show");
@@ -616,6 +591,10 @@
       }
       if (audioContext && audioBuffer && !musicSource) {
         startBufferedMusic();
+        return;
+      }
+      if (!audioBuffer && bgMusic.paused) {
+        startFallbackAudio();
       }
     }
 
@@ -638,14 +617,12 @@
     async function startExperience() {
       if (started) return;
       started = true;
-      const musicStarted = await startMusic(false);
-      startScreen.classList.add("hidden");
       scenes[0].classList.remove("active");
       void scenes[0].offsetWidth;
       showScene(0);
-      if (!musicStarted) {
-        musicToggle.classList.add("show");
-      }
+      startMusic(false).then((musicStarted) => {
+        if (!musicStarted) musicToggle.classList.add("show");
+      });
     }
 
     musicToggle.addEventListener("click", () => {
@@ -656,7 +633,7 @@
       }
     });
 
-    startButton.addEventListener("click", startExperience);
+    startExperience();
     document.addEventListener("visibilitychange", () => {
       if (started && !userPausedMusic && !document.hidden) {
         if (audioContext) audioContext.resume().catch(() => {});
