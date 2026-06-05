@@ -262,6 +262,32 @@
       transform: translate3d(0, 0, 0);
     }
 
+    .scene.active .kicker,
+    .scene.active h1,
+    .scene.active .line {
+      animation: lineIn .68s cubic-bezier(.18, .88, .28, 1) both;
+    }
+
+    .scene.active h1 {
+      animation-delay: .08s;
+    }
+
+    .scene.active .line:nth-of-type(1) {
+      animation-delay: .2s;
+    }
+
+    .scene.active .line:nth-of-type(2) {
+      animation-delay: .34s;
+    }
+
+    .scene.active .line:nth-of-type(3) {
+      animation-delay: .48s;
+    }
+
+    .scene.active .line:nth-of-type(4) {
+      animation-delay: .62s;
+    }
+
     .scene.exit {
       opacity: 0;
       transform: translate3d(0, -12px, 0);
@@ -361,6 +387,17 @@
       100% { opacity: .5; transform: translate(-50%, -50%) rotate(-7deg) scaleX(1); }
     }
 
+    @keyframes lineIn {
+      from {
+        opacity: 0;
+        transform: translate3d(0, 18px, 0) scale(.985);
+      }
+      to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+    }
+
     @media (max-width: 680px) {
       .scene {
         padding: 24px 18px 96px;
@@ -386,7 +423,7 @@
     <div class="noise"></div>
     <div class="badge">READ · DREAM · GROW</div>
     <button class="music-tip" id="musicToggle" type="button" aria-label="开启或关闭背景音乐">开启音乐</button>
-    <audio id="bgMusic" src="background.wav" loop preload="auto"></audio>
+    <audio id="bgMusic" src="background.wav" loop preload="auto" playsinline></audio>
     <div class="start-screen" id="startScreen">
       <div class="start-panel">
         <h1 class="start-title">好好读书</h1>
@@ -533,11 +570,12 @@
         musicToggle.classList.add("playing");
         musicToggle.classList.add("show");
         window.setTimeout(() => musicToggle.classList.remove("show"), 2200);
+        return true;
       } catch (error) {
-        if (showTipOnBlock) {
-          musicToggle.textContent = "开启音乐";
-          musicToggle.classList.add("show");
-        }
+        musicToggle.textContent = "点击开启音乐";
+        musicToggle.classList.add("show");
+        musicToggle.classList.remove("playing");
+        return false;
       }
     }
 
@@ -559,7 +597,6 @@
       lastMusicTime = bgMusic.currentTime;
       if (musicStallCount >= 4) {
         musicStallCount = 0;
-        bgMusic.load();
         bgMusic.play().catch(() => {});
       }
     }
@@ -575,11 +612,14 @@
     async function startExperience() {
       if (started) return;
       started = true;
+      const musicStarted = await startMusic(false);
       startScreen.classList.add("hidden");
       scenes[0].classList.remove("active");
       void scenes[0].offsetWidth;
       showScene(0);
-      await startMusic(false);
+      if (!musicStarted) {
+        musicToggle.classList.add("show");
+      }
     }
 
     musicToggle.addEventListener("click", () => {
