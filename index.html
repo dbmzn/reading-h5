@@ -527,6 +527,48 @@
       musicToggle.classList.remove("playing");
     }
 
+    function unlockWeixinAudio() {
+      if (!started || userPausedMusic) return;
+      const bridge = window.WeixinJSBridge;
+      if (bridge && typeof bridge.invoke === "function") {
+        bridge.invoke("getNetworkType", {}, () => {
+          startMusic(false);
+        });
+        return;
+      }
+      startMusic(false);
+    }
+
+    function bindWeixinAudioUnlock() {
+      if (window.WeixinJSBridge && typeof window.WeixinJSBridge.invoke === "function") {
+        unlockWeixinAudio();
+      } else {
+        document.addEventListener("WeixinJSBridgeReady", unlockWeixinAudio, false);
+      }
+    }
+
+    function bindFirstGestureUnlock() {
+      const gestureEvents = ["touchstart", "pointerdown", "click"];
+      const startMusicOnFirstGesture = (event) => {
+        const target = event.target;
+        if (target && musicToggle.contains(target)) return;
+        gestureEvents.forEach((eventName) => {
+          document.removeEventListener(eventName, startMusicOnFirstGesture);
+        });
+        if (started && !userPausedMusic) {
+          startMusic(false);
+        }
+      };
+
+      gestureEvents.forEach((eventName) => {
+        document.addEventListener(
+          eventName,
+          startMusicOnFirstGesture,
+          eventName === "click" ? false : { passive: true }
+        );
+      });
+    }
+
     async function startExperience() {
       if (started) return;
       started = true;
@@ -546,16 +588,13 @@
     });
 
     startExperience();
+    bindFirstGestureUnlock();
+    bindWeixinAudioUnlock();
     document.addEventListener("visibilitychange", () => {
       if (started && !userPausedMusic && !document.hidden) {
         bgMusic.play().catch(() => {});
       }
     });
-    document.addEventListener("WeixinJSBridgeReady", () => {
-      if (started && !userPausedMusic) {
-        startMusic(false);
-      }
-    }, false);
     window.setInterval(keepMusicAlive, 1000);
   </script>
 </body>
