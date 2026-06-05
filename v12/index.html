@@ -527,8 +527,8 @@
       musicToggle.classList.remove("playing");
     }
 
-    function unlockWeixinAudio() {
-      if (!started || userPausedMusic) return;
+    function unlockWeixinAudio(force = false) {
+      if (!started || (!force && userPausedMusic)) return;
       const bridge = window.WeixinJSBridge;
       if (bridge && typeof bridge.invoke === "function") {
         bridge.invoke("getNetworkType", {}, () => {
@@ -583,7 +583,7 @@
       if (!bgMusic.paused && !userPausedMusic) {
         stopMusic();
       } else {
-        startMusic(false);
+        unlockWeixinAudio(true);
       }
     });
 
