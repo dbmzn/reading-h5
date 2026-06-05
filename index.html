@@ -269,7 +269,7 @@
       display: inline-block;
       min-width: .18em;
       opacity: 0;
-      transform: translate3d(calc((var(--i) % 5 - 2) * 10px), .9em, 0) rotate(calc((var(--i) % 7 - 3) * 2deg)) scale(.72);
+      transform: translate3d(var(--dx), .9em, 0) rotate(var(--rot)) scale(.72);
       transform-origin: center bottom;
       filter: blur(8px);
       will-change: transform, opacity, filter;
@@ -356,7 +356,7 @@
     @keyframes wordIn {
       0% {
         opacity: 0;
-        transform: translate3d(calc((var(--i) % 5 - 2) * 10px), .9em, 0) rotate(calc((var(--i) % 7 - 3) * 2deg)) scale(.72);
+        transform: translate3d(var(--dx), .9em, 0) rotate(var(--rot)) scale(.72);
         filter: blur(8px);
       }
       58% {
@@ -545,6 +545,8 @@
           const span = document.createElement("span");
           span.className = "word";
           span.style.setProperty("--i", index);
+          span.style.setProperty("--dx", `${((index % 5) - 2) * 10}px`);
+          span.style.setProperty("--rot", `${((index % 7) - 3) * 2}deg`);
           span.textContent = char === " " ? "\u00a0" : char;
           node.appendChild(span);
         });
