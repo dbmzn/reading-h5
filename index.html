@@ -536,8 +536,12 @@
     let timer = 0;
     let started = false;
     let userPausedMusic = false;
-    let lastMusicTime = 0;
-    let musicStallCount = 0;
+    let audioContext = null;
+    let audioBuffer = null;
+    let musicSource = null;
+    let musicGain = null;
+    let musicStartedAt = 0;
+    let musicOffset = 0;
 
     function showScene(index) {
       window.clearTimeout(timer);
@@ -562,10 +566,22 @@
 
     async function startMusic(showTipOnBlock = true) {
       try {
-        bgMusic.volume = 0.82;
-        bgMusic.loop = true;
         userPausedMusic = false;
-        await bgMusic.play();
+        if (!audioContext) {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          musicGain = audioContext.createGain();
+          musicGain.gain.value = 0.82;
+          musicGain.connect(audioContext.destination);
+        }
+        await audioContext.resume();
+        if (!audioBuffer) {
+          musicToggle.textContent = "音乐加载中";
+          musicToggle.classList.add("show");
+          const response = await fetch("background.wav", { cache: "force-cache" });
+          const arrayBuffer = await response.arrayBuffer();
+          audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        }
+        startBufferedMusic();
         musicToggle.textContent = "音乐播放中";
         musicToggle.classList.add("playing");
         musicToggle.classList.add("show");
@@ -579,30 +595,40 @@
       }
     }
 
+    function startBufferedMusic() {
+      if (!audioContext || !audioBuffer || userPausedMusic) return;
+      if (musicSource) {
+        musicSource.stop();
+        musicSource.disconnect();
+      }
+      musicSource = audioContext.createBufferSource();
+      musicSource.buffer = audioBuffer;
+      musicSource.loop = true;
+      musicSource.connect(musicGain);
+      musicStartedAt = audioContext.currentTime - musicOffset;
+      musicSource.start(0, musicOffset % audioBuffer.duration);
+    }
+
     function keepMusicAlive() {
       if (!started || userPausedMusic || document.hidden) return;
-      if (bgMusic.paused) {
-        bgMusic.play().catch(() => {});
-        return;
+      if (audioContext && audioBuffer && audioContext.state !== "running") {
+        audioContext.resume().catch(() => {});
       }
-      if (bgMusic.duration && bgMusic.currentTime > bgMusic.duration - 0.35) {
-        bgMusic.currentTime = 0;
-        bgMusic.play().catch(() => {});
-      }
-      if (Math.abs(bgMusic.currentTime - lastMusicTime) < 0.02) {
-        musicStallCount += 1;
-      } else {
-        musicStallCount = 0;
-      }
-      lastMusicTime = bgMusic.currentTime;
-      if (musicStallCount >= 4) {
-        musicStallCount = 0;
-        bgMusic.play().catch(() => {});
+      if (audioContext && audioBuffer && !musicSource) {
+        startBufferedMusic();
       }
     }
 
     function stopMusic() {
       userPausedMusic = true;
+      if (audioContext && audioBuffer) {
+        musicOffset = (audioContext.currentTime - musicStartedAt) % audioBuffer.duration;
+      }
+      if (musicSource) {
+        musicSource.stop();
+        musicSource.disconnect();
+        musicSource = null;
+      }
       bgMusic.pause();
       musicToggle.textContent = "开启音乐";
       musicToggle.classList.add("show");
@@ -623,7 +649,7 @@
     }
 
     musicToggle.addEventListener("click", () => {
-      if (!bgMusic.paused) {
+      if (musicSource && !userPausedMusic) {
         stopMusic();
       } else {
         startMusic(false);
@@ -631,20 +657,10 @@
     });
 
     startButton.addEventListener("click", startExperience);
-    bgMusic.addEventListener("ended", () => {
-      if (started && !userPausedMusic) {
-        bgMusic.currentTime = 0;
-        bgMusic.play().catch(() => {});
-      }
-    });
-    bgMusic.addEventListener("pause", () => {
-      if (started && !userPausedMusic && !document.hidden) {
-        window.setTimeout(() => bgMusic.play().catch(() => {}), 250);
-      }
-    });
     document.addEventListener("visibilitychange", () => {
       if (started && !userPausedMusic && !document.hidden) {
-        bgMusic.play().catch(() => {});
+        if (audioContext) audioContext.resume().catch(() => {});
+        if (!musicSource) startBufferedMusic();
       }
     });
     window.setInterval(keepMusicAlive, 1000);
