@@ -481,20 +481,29 @@
     let muted = false;
 
     const melody = [
-      ["C5", .5], ["E5", .5], ["G5", .5], ["E5", .5],
-      ["A5", .75], ["G5", .25], ["E5", .5], ["D5", .5],
-      ["C5", .5], ["D5", .5], ["E5", .5], ["G5", .5],
-      ["A5", .75], ["G5", .25], ["E5", .5], ["C5", .5],
-      ["F5", .5], ["A5", .5], ["G5", .5], ["E5", .5],
-      ["D5", .5], ["E5", .5], ["G5", .5], ["C6", .5],
-      ["A5", .75], ["G5", .25], ["E5", .5], ["D5", .5],
-      ["C5", 1], ["REST", .5], ["G4", .5], ["C5", 1]
+      ["C5", 1], ["E5", 1], ["G5", 1], ["C6", 1],
+      ["B5", .75], ["A5", .25], ["G5", 1], ["E5", 1],
+      ["F5", 1], ["A5", 1], ["C6", 1], ["A5", 1],
+      ["G5", .75], ["E5", .25], ["D5", 1], ["G5", 1],
+      ["E5", 1], ["G5", 1], ["B5", 1], ["D6", 1],
+      ["C6", .75], ["B5", .25], ["A5", 1], ["G5", 1],
+      ["A5", 1], ["C6", 1], ["D6", 1], ["E6", 1],
+      ["D6", .75], ["C6", .25], ["B5", 1], ["C6", 1.5], ["REST", .5]
     ];
 
+    const chords = [
+      ["C4", "E4", "G4"], ["G3", "D4", "G4"], ["A3", "E4", "A4"], ["F3", "C4", "F4"],
+      ["C4", "E4", "G4"], ["G3", "D4", "G4"], ["F3", "C4", "F4"], ["G3", "D4", "G4"]
+    ];
+
+    const bassLine = ["C3", "G2", "A2", "F2", "C3", "G2", "F2", "G2"];
+
     const noteFrequency = {
-      C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392,
+      F2: 87.31, G2: 98, A2: 110, C3: 130.81,
+      F3: 174.61, G3: 196, A3: 220,
+      C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392, A4: 440,
       C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99,
-      A5: 880, C6: 1046.5
+      A5: 880, B5: 987.77, C6: 1046.5, D6: 1174.66, E6: 1318.51
     };
 
     function splitText() {
@@ -539,39 +548,60 @@
       return audioContext;
     }
 
-    function playTone(note, start, beatLength) {
+    function playTone(note, start, beatLength, options = {}) {
       if (note === "REST") return;
       const context = ensureAudioContext();
       const frequency = noteFrequency[note];
       const osc = context.createOscillator();
       const gain = context.createGain();
-      const ping = context.createOscillator();
-      const pingGain = context.createGain();
-      osc.type = "sine";
-      ping.type = "triangle";
+      const type = options.type || "triangle";
+      const volume = options.volume || 0.09;
+      const attack = options.attack || 0.035;
+      const releaseAt = options.releaseAt || 0.9;
+      osc.type = type;
       osc.frequency.setValueAtTime(frequency, start);
-      ping.frequency.setValueAtTime(frequency * 2, start);
       gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(0.12, start + 0.025);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + beatLength * 0.88);
-      pingGain.gain.setValueAtTime(0.0001, start);
-      pingGain.gain.exponentialRampToValueAtTime(0.045, start + 0.018);
-      pingGain.gain.exponentialRampToValueAtTime(0.0001, start + beatLength * 0.55);
+      gain.gain.exponentialRampToValueAtTime(volume, start + attack);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + beatLength * releaseAt);
       osc.connect(gain).connect(context.destination);
-      ping.connect(pingGain).connect(context.destination);
       osc.start(start);
-      ping.start(start);
       osc.stop(start + beatLength);
-      ping.stop(start + beatLength * 0.7);
+    }
+
+    function playChord(notes, start, beatLength) {
+      notes.forEach((note, index) => {
+        playTone(note, start + index * 0.018, beatLength, {
+          type: "sine",
+          volume: 0.028,
+          attack: 0.08,
+          releaseAt: 0.96
+        });
+      });
     }
 
     function scheduleMusicLoop() {
       if (!musicPlaying || muted) return;
       const context = ensureAudioContext();
-      const beat = 0.42;
+      const beat = 0.48;
       let cursor = context.currentTime + 0.08;
+      let harmonyCursor = cursor;
+      chords.forEach((chord, index) => {
+        playChord(chord, harmonyCursor, beat * 4);
+        playTone(bassLine[index], harmonyCursor, beat * 3.6, {
+          type: "sine",
+          volume: 0.035,
+          attack: 0.06,
+          releaseAt: 0.96
+        });
+        harmonyCursor += beat * 4;
+      });
       melody.forEach(([note, beats]) => {
-        playTone(note, cursor, beat * beats);
+        playTone(note, cursor, beat * beats, {
+          type: "triangle",
+          volume: 0.075,
+          attack: 0.025,
+          releaseAt: 0.88
+        });
         cursor += beat * beats;
       });
       musicTimer = window.setTimeout(scheduleMusicLoop, Math.max(1000, (cursor - context.currentTime - 0.3) * 1000));
